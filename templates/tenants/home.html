@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WorkSync Home</title>
+</head>
+<body>
+    <h1>WorkSync Home</h1>
+    {% if user.is_authenticated %}
+        <p>Welcome, {{ user.username }}!</p>
+        {% if request.tenant %}
+            <p>Tenant: {{ request.tenant.name }}</p>
+        {% endif %}
+        <form method="post" action="{% url 'tenant_logout' %}">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    {% else %}
+        <p><a href="{% url 'tenant_login' %}">Login</a></p>
+    {% endif %}
+</body>
+</html>

@@ -99,35 +99,48 @@ WorkSync is a multi-tenant project and resource management platform. The MVP foc
 - Basic audit logging for key actions
 - Minimal security for tenant isolation and auth
 
-## 9. Assumptions and Ambiguities
-### Assumptions
-- Tenant isolation is handled by middleware and session-based tenant context.
-- Available hours are a fixed standard of 40 hours/week per user for MVP.
-- Overdue tasks are based on due date plus incomplete status.
-- Notifications are MVP-light: console/in-app placeholders only, with no real email delivery.
-- Tenant records are created only by Admin users or via Django admin in MVP.
+## 9. Confirmed Technical Decisions (MVP)
+The following technical decisions are approved for the MVP and must be implemented as documented:
 
-### Resolved Decisions
-- Tenant onboarding is Admin-only for MVP; no self-registration.
-- Available hours are fixed at 40 hours/week per user.
-- Task creation is limited to Admins and Project Managers.
-- Viewer users see the full tenant-level dashboard in read-only mode.
-- Notifications are placeholder-only; no live email delivery in MVP.
+1. Tenant creation / onboarding
+- Only superusers (developer/platform admin) create `Tenant` records via Django admin and create the initial Tenant Admin. No tenant self-registration or onboarding flows are in MVP.
 
-## 10. Clarification Answers
-1. Tenant records are created only by Admin users or through Django admin; no self-registration in MVP.
-2. Utilization uses a fixed standard of 40 hours/week per user.
-3. Task creation is limited to Admins and Project Managers only.
-4. Viewer users see the full tenant-level dashboard in read-only mode.
-5. MVP notifications are placeholder-only, using simple in-app or console-based behavior.
+2. Multi-tenant user membership
+- Users are single-tenant only in MVP. Do not support multi-tenant membership or tenant selection after login.
 
-## 11. Next Steps
-- Finalize the PRD and use it as the basis for implementation planning.
-- Define a detailed MVP implementation plan and user journey mapping based on the confirmed PRD.
-- Create a local development setup checklist for Django and SQLite.
+3. Role implementation and task creation
+- Role enforcement uses a custom `role` field on `TenantUser` combined with lightweight helper decorators for access checks.
+- Task creation is limited to `Admin` and `Project Manager` roles. `Team Member` can only update assigned task status and actual effort.
 
-## 12. Validation Summary
-- The PRD aligns with the BRD by preserving core MVP goals, tenant isolation, role-based access, and dashboard metrics.
-- The selected stack is explicitly captured: Django templates, Bootstrap, Chart.js, Django auth, SQLite local dev, modular monolith.
-- Ambiguities were resolved with confirmed decisions for tenant onboarding, standard weekly availability, task creation roles, read-only viewer dashboards, and placeholder notifications.
-- The document is now finalized for MVP implementation planning.
+4. Available hours
+- For MVP, available hours are a global constant: `settings.DEFAULT_WEEKLY_HOURS = 40`. This is not configurable per-tenant or per-user in MVP.
+
+5. ResourceAllocation semantics
+- Utilization is computed only from `ResourceAllocation.allocated_hours`. Task effort may be displayed for reference, but is not authoritative for allocation or utilization calculations.
+
+6. Deletion semantics
+- For MVP, use cascade delete: deleting a `Project` cascades to delete its `Task` records. Soft-delete strategies are deferred for a future phase.
+
+7. Audit logging
+- Backend logging plus a minimal `AuditLog` model will record key events: login events; project create/update/delete; task create/update/status changes. No audit UI is required for MVP.
+
+8. Session tenant enforcement
+- Users are single-tenant. On login set `request.session['tenant_id'] = TenantUser.tenant.id` and middleware must use this value to filter tenant-scoped queries.
+
+9. Tenant Admin UI scope
+- Tenant Admin UI in the application will support minimal user management fields: username/email, `TenantUser.role`, and active status. No invites or password reset flows in MVP.
+
+10. Tests and acceptance criteria
+- The MVP requires acceptance tests for critical flows: login, project create, task create/assign/update, resource allocation create, and dashboard view.
+
+## 10. Remediation and Next Steps
+- Update implementation plans, data models, and middleware to reflect the confirmed decisions above.
+- Add the `DEFAULT_WEEKLY_HOURS` constant to the Django settings and document how to change it in the future.
+- Implement a minimal `AuditLog` model and configure Django logging to capture the specified events.
+
+## 11. Validation Summary
+- The PRD now explicitly captures the approved MVP decisions for tenant onboarding, role enforcement, allocation semantics, deletion behavior, audit logging, and testing scope.
+- These clarifications remove ambiguity and align the PRD with the architecture and epics for implementation.
+
+## 12. Final Note
+- The PRD is finalized for MVP implementation planning; any future scope changes must be recorded as backlog items and approved by stakeholders.

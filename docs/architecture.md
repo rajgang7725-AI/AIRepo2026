@@ -34,28 +34,28 @@ The application should be split into domain-specific Django apps:
 
 ### 3.3 Tenant Context and Isolation
 - Tenant context is resolved via middleware on each request.
-- The current tenant is stored in session and applied to all relevant queries.
+- Users are single-tenant in MVP; do not support multi-tenant membership or tenant selection.
+- On login, the application must set `request.session['tenant_id'] = TenantUser.tenant.id` and middleware must use this value to scope queries.
 - All shared models include a `tenant` foreign key to ensure isolation.
-- Admin user creation and tenant onboarding are restricted to Admins or Django admin.
+- Tenant records are created only by superusers via Django admin; superusers also create the initial Tenant Admin. No tenant self-registration in MVP.
 
 ## 4. Core Architectural Components
 
 ### 4.1 Authentication & Authorization
 - Use Django built-in authentication for login/logout and session management.
-- Role-based access is required for Admin, Project Manager, Team Member, and Viewer.
-- Decisions needed: implement access via Django Groups/Permissions, a custom `role` field on `TenantUser`, or a hybrid.
+- Role enforcement uses a custom `role` field on `TenantUser`, combined with helper decorators to check roles (Admin, Project Manager, Team Member, Viewer).
+- `TenantUser` is the canonical mapping between `auth.User` and a single `Tenant` including a `role` field and `is_active` flag.
 
 ### 4.2 Project and Task Management
-- Projects: name, description, start/end dates, status values, tenant association.
-- Tasks: title, description, owner, status, estimated effort, actual effort, due date, project association.
-- Task creation is limited to Admins and Project Managers.
-- Team Members can update assigned tasks only.
+- Projects: name, description, start/end dates, status values, and tenant association.
+- Tasks: title, description, owner (tenant user), status, estimated effort (informational), actual effort, due date, and project association.
+- Task creation is limited to `Admin` and `Project Manager` roles; `Team Member` may update only assigned task status and actual effort.
 
 ### 4.3 Resource and Workload Management
-- Weekly utilization is based on assigned hours vs fixed 40 hours/week available time.
-- Over-allocation is defined as >100% utilization.
-- Visual indicators should use green/yellow/red thresholds.
-- Decisions needed: whether workload is derived from task assignments alone or also supported by explicit weekly allocation records.
+- Weekly utilization is based on explicit `ResourceAllocation.allocated_hours` and a global constant `settings.DEFAULT_WEEKLY_HOURS = 40`.
+- Over-allocation is defined as utilization > 100%.
+- `ResourceAllocation` records are independent planned allocations by user/week for MVP; optional task context may be added later but is not required.
+- Display task effort as reference only; do not use task effort as the authoritative allocation source for utilization.
 
 ### 4.4 Dashboard and Reporting
 - Dashboard displays tenant-level metrics:
@@ -63,67 +63,70 @@ The application should be split into domain-specific Django apps:
   - Task status distribution
   - Overdue tasks
   - Team utilization percentage
-- Viewer users access the same dashboard in read-only mode.
-- Chart.js renders the metric visualizations.
+- Viewer users access the full tenant dashboard in read-only mode; no widgets are hidden in MVP.
+- Chart.js renders the metric visualizations embedded in Django templates.
 
 ### 4.5 Data Persistence
-- SQLite local DB for MVP.
-- Schema should remain compatible with PostgreSQL later.
+- SQLite local DB for MVP. Schema must remain compatible with PostgreSQL for future migration.
 - Use Django migrations to manage schema evolution.
 
 ### 4.6 Local Development Considerations
 - Application runs via `python manage.py runserver`.
-- Use local Bootstrap assets and local Chart.js scripts.
-- Use console-based or in-app notification placeholders.
-- Use Django admin for tenant and user management.
+- Use local Bootstrap assets and Chart.js scripts.
+- Notification placeholders (UI + console logging) are sufficient in MVP.
+- Use Django admin for superusers to manage tenants and initial tenant admins; tenant-level Admin UI exists for minimal user management.
 
 ## 5. Data Model Outline
-The following core models are expected:
+Core models for MVP:
 - `Tenant`
-- `TenantUser` (links Django User to Tenant; role assignment)
+- `TenantUser` (links Django `auth.User` to `Tenant`, contains `role` and `is_active`)
 - `Project`
 - `Task`
-- `ResourceAllocation` or equivalent for weekly workload tracking
+- `ResourceAllocation` (week_start, user, allocated_hours, notes)
+- `AuditLog` (minimal model to store key events)
 
 ## 6. Key Decisions and Tradeoffs
 
 ### 6.1 Tenant Isolation Model
-- Chosen: context-based tenant isolation via middleware and session.
-- Tradeoff: simpler for MVP; potential scaling concerns if tenant count grows significantly.
-- Input needed: none, this is confirmed.
+- Chosen: context-based tenant isolation via middleware and session. Simpler for MVP; scale limitations documented.
 
 ### 6.2 User Role Implementation
-- Chosen: custom `role` field on `TenantUser`, combined with simple helper decorators for role checks.
-- Tradeoff: simpler and faster for MVP than Django Groups.
-- Input needed: none, this is confirmed.
+- Chosen: custom `role` field on `TenantUser` with helper decorators for enforcement. Simpler and faster for MVP.
 
 ### 6.3 Workload Modeling
-- Chosen: explicit weekly allocation records (`ResourceAllocation`) in addition to task-based effort.
-- Tradeoff: slightly more initial modeling but provides clearer workload planning and visualization.
-- Input needed: none, this is confirmed.
+- Chosen: explicit weekly `ResourceAllocation` records are the authoritative source for utilization. Task effort is informational.
 
 ### 6.4 Notification Handling
-- Chosen: placeholder/in-app/console-only for MVP.
-- Tradeoff: avoids delivery complexity; real notifications deferred.
-- Input needed: none, this is confirmed.
+- Chosen: placeholder/in-app/console-only for MVP. Real delivery deferred.
 
 ### 6.5 Viewer Dashboard Scope
-- Chosen: full tenant-level dashboard access read-only.
-- Tradeoff: simplest implementation and aligns with stakeholder visibility needs.
-- Input needed: none, this is confirmed.
+- Chosen: full tenant-level dashboard read-only for Viewers.
 
 ### 6.6 Audit Logging
-- Chosen: minimal audit logging for login events, project creation/update/deletion, and task creation/update/status changes.
-- Tradeoff: lightweight and sufficient for MVP.
-- Input needed: none, this is confirmed.
+- Chosen: minimal audit logging for login events and project/task create/update/delete/status changes. Implement `AuditLog` table plus standard Django logging to file/console.
+
+### 6.7 Deletion Semantics
+- Chosen: cascade delete for `Project` -> `Task` in MVP. Soft-delete is deferred to future work.
 
 ## 7. Architecture Finalization
-The architecture decisions have been confirmed for MVP:
-- Role enforcement uses a custom `role` field on `TenantUser` with helper decorators.
-- Workload modeling includes explicit weekly `ResourceAllocation` records plus task-based effort.
-- Viewer users have full tenant-level dashboard visibility in read-only mode.
-- Audit logging includes login events and project/task create/update/delete/status changes.
-- Django admin superusers can manage all tenants; tenant-level Admins are restricted to their tenant data in application views.
+The architecture decisions have been confirmed for MVP and are recorded here to guide implementation.
 
-## 8. Next Step
-The architecture is now ready for implementation-level design. The next phase is to translate this architecture into Django app design, data model definitions, and page/component mapping.
+## 8. Session Tenant Enforcement and Flow
+- Users are single-tenant in MVP.
+- On successful login set `request.session['tenant_id'] = TenantUser.tenant.id`.
+- `TenantMiddleware` reads `request.session['tenant_id']` and sets `request.tenant` for use by views and model managers. All tenant-scoped queries must filter by `tenant`.
+
+## 9. Audit Logging and Deletion Semantics
+- Implement a minimal `AuditLog` model with fields: `id`, `tenant`, `user`, `event_type`, `object_type`, `object_id`, `timestamp`, and `details` (JSON/text).
+- Configure Django logging to write key events to console/file and optionally write structured audit rows to the `AuditLog` model.
+- Deletion: deleting a `Project` cascades to its `Task` records; `ResourceAllocation` records are independent and not cascaded unless explicitly linked.
+
+## 10. Tenant Admin UI Scope
+- Tenant Admin UI supports minimal user management (username/email, `role`, `is_active`) and basic user list/filtering within tenant scope. No invite or password-reset flows in MVP.
+
+## 11. Testing Expectations
+- Add acceptance tests for critical flows: login (tenant-scoped), project create/edit/delete, task create/assign/update, resource allocation create, and dashboard rendering.
+- Prefer Django unit tests for models/services and simple functional tests for key UI flows.
+
+## 12. Next Step
+Translate this architecture into implementation-level designs: Django app skeleton, model definitions (with fields and constraints), middleware, decorators, views, templates, and automated tests.
