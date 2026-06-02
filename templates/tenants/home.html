@@ -11,6 +11,11 @@
         {% if request.tenant %}
             <p>Tenant: {{ request.tenant.name }}</p>
         {% endif %}
+        <ul>
+            <li><a href="{% url 'dashboard_home' %}">Dashboard</a></li>
+            <li><a href="{% url 'project_list' %}">Projects</a></li>
+            <li><a href="{% url 'task_list' %}">Tasks</a></li>
+        </ul>
         <form method="post" action="{% url 'tenant_logout' %}">
             {% csrf_token %}
             <button type="submit">Logout</button>

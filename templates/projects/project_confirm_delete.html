@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delete Project</title>
+</head>
+<body>
+    <h1>Delete Project</h1>
+    <p>Are you sure you want to delete project "{{ object.name }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Confirm Delete</button>
+    </form>
+    <p><a href="{% url 'project_list' %}">Cancel</a></p>
+</body>
+</html>

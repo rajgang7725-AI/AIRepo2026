@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tenant Dashboard</title>
+</head>
+<body>
+    <h1>Tenant Dashboard</h1>
+    {% if request.tenant %}
+        <p>Tenant: {{ request.tenant.name }}</p>
+    {% endif %}
+
+    <h2>Projects by Status</h2>
+    <ul>
+        {% for status, count in project_status_counts.items %}
+            <li>{{ status }}: {{ count }}</li>
+        {% empty %}
+            <li>No projects yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Tasks by Status</h2>
+    <ul>
+        {% for status, count in task_status_counts.items %}
+            <li>{{ status }}: {{ count }}</li>
+        {% empty %}
+            <li>No tasks yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Overdue Tasks</h2>
+    <p>{{ overdue_task_count }}</p>
+
+    <p>
+        <a href="{% url 'project_list' %}">Projects</a> |
+        <a href="{% url 'task_list' %}">Tasks</a> |
+        <a href="{% url 'tenant_home' %}">Home</a>
+    </p>
+</body>
+</html>

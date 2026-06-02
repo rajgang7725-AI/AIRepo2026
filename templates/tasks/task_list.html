@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tasks</title>
+</head>
+<body>
+    <h1>Tasks</h1>
+    <p><a href="{% url 'tenant_home' %}">Home</a> | <a href="{% url 'task_create' %}">Create Task</a></p>
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <strong><a href="{% url 'task_detail' task.pk %}">{{ task.title }}</a></strong> - {{ task.status }}
+                {% if task.project %} (Project: {{ task.project.name }}){% endif %}
+                {% if task.assigned_to %} - Assigned to {{ task.assigned_to.user.username }}{% endif %}
+                <br>
+                <a href="{% url 'task_edit' task.pk %}">Edit</a> |
+                <a href="{% url 'task_delete' task.pk %}">Delete</a>
+            </li>
+        {% empty %}
+            <li>No tasks yet.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

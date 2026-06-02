@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Project Detail</title>
+</head>
+<body>
+    <h1>{{ project.name }}</h1>
+    <p>Status: {{ project.status }}</p>
+    <p>Description: {{ project.description|default:'No description provided.' }}</p>
+    <p>Start date: {{ project.start_date|default:'N/A' }}</p>
+    <p>End date: {{ project.end_date|default:'N/A' }}</p>
+    <p>Created at: {{ project.created_at }}</p>
+    <p>Updated at: {{ project.updated_at }}</p>
+    <p><a href="{% url 'project_edit' project.pk %}">Edit</a> | <a href="{% url 'project_delete' project.pk %}">Delete</a> | <a href="{% url 'project_list' %}">Back to Projects</a></p>
+
+    <h2>Tasks</h2>
+    <ul>
+        {% for task in project.tasks.all %}
+            <li><a href="{% url 'task_detail' task.pk %}">{{ task.title }}</a> - {{ task.status }}</li>
+        {% empty %}
+            <li>No tasks for this project yet.</li>
+        {% endfor %}
+    </ul>
+
+    <p><a href="{% url 'task_create' %}">Create a Task</a></p>
+</body>
+</html>

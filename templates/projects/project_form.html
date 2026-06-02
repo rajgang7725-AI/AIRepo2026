@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if object %}Edit Project{% else %}Create Project{% endif %}</title>
+</head>
+<body>
+    <h1>{% if object %}Edit Project{% else %}Create Project{% endif %}</h1>
+    <p><a href="{% url 'project_list' %}">Back to Projects</a></p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save</button>
+    </form>
+</body>
+</html>

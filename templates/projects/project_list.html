@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Projects</title>
+</head>
+<body>
+    <h1>Projects</h1>
+    <p><a href="{% url 'tenant_home' %}">Home</a> | <a href="{% url 'project_create' %}">Create Project</a></p>
+    <ul>
+        {% for project in projects %}
+            <li>
+                <strong><a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a></strong> - {{ project.status }}
+                {% if project.start_date %} ({{ project.start_date }} - {{ project.end_date }}){% endif %}
+                <br>
+                <a href="{% url 'project_edit' project.pk %}">Edit</a> |
+                <a href="{% url 'project_delete' project.pk %}">Delete</a>
+            </li>
+        {% empty %}
+            <li>No projects yet.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

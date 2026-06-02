@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Detail</title>
+</head>
+<body>
+    <h1>{{ task.title }}</h1>
+    <p>Project: <a href="{% url 'project_detail' task.project.pk %}">{{ task.project.name }}</a></p>
+    <p>Status: {{ task.status }}</p>
+    <p>Description: {{ task.description|default:'No description provided.' }}</p>
+    <p>Assigned to: {% if task.assigned_to %}{{ task.assigned_to.user.username }}{% else %}Unassigned{% endif %}</p>
+    <p>Due date: {{ task.due_date|default:'N/A' }}</p>
+    <p>Estimated hours: {{ task.estimated_hours|default:'N/A' }}</p>
+    <p>Actual hours: {{ task.actual_hours|default:'N/A' }}</p>
+    <p>Created at: {{ task.created_at }}</p>
+    <p>Updated at: {{ task.updated_at }}</p>
+    <p><a href="{% url 'task_edit' task.pk %}">Edit</a> | <a href="{% url 'task_delete' task.pk %}">Delete</a> | <a href="{% url 'task_list' %}">Back to Tasks</a></p>
+</body>
+</html>
